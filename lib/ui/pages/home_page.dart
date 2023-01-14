@@ -14,7 +14,6 @@ import 'package:todo2/ui/theme.dart';
 import 'package:todo2/ui/widgets/button.dart';
 import 'package:todo2/ui/widgets/input_field.dart';
 import 'package:todo2/ui/widgets/task_tile.dart';
-import '';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -26,6 +25,12 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final TaskController _taskController = Get.put(TaskController());
   DateTime _selectedDate = DateTime.now();
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     SizeConfig().init(context);
@@ -120,30 +125,38 @@ class _HomePageState extends State<HomePage> {
   }
 
   _showTasks() {
-    return Expanded(
-      child: ListView.builder(
-        scrollDirection: SizeConfig.orientation == Orientation.landscape
-            ? Axis.horizontal
-            : Axis.vertical,
-        itemBuilder: ((context, index) {
-          var task = _taskController.taskList[index];
-          return AnimationConfiguration.staggeredList(
-            duration: const Duration(milliseconds: 1225),
-            position: index,
-            child: SlideAnimation(
-              horizontalOffset: 300,
-              child: FadeInAnimation(
-                child: GestureDetector(
-                  onTap: () => _showBottomSheet(context, task),
-                  child: TaskTile(task: task),
+    return Expanded(child: Obx(() {
+      if (_taskController.taskList.isEmpty) {
+        return _noTaskMSg();
+      } else {
+        return RefreshIndicator(
+          onRefresh: _onRefresh,
+          child: ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(),
+            scrollDirection: SizeConfig.orientation == Orientation.landscape
+                ? Axis.horizontal
+                : Axis.vertical,
+            itemBuilder: ((BuildContext context, int index) {
+              var task = _taskController.taskList[index];
+              return AnimationConfiguration.staggeredList(
+                duration: const Duration(milliseconds: 1225),
+                position: index,
+                child: SlideAnimation(
+                  horizontalOffset: 300,
+                  child: FadeInAnimation(
+                    child: GestureDetector(
+                      onTap: () => _showBottomSheet(context, task),
+                      child: TaskTile(task: task),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          );
-        }),
-        itemCount: _taskController.taskList.length,
-      ),
-    );
+              );
+            }),
+            itemCount: _taskController.taskList.length,
+          ),
+        );
+      }
+    }));
   }
 
   _noTaskMSg() {
@@ -151,36 +164,39 @@ class _HomePageState extends State<HomePage> {
       children: [
         AnimatedPositioned(
           duration: const Duration(milliseconds: 2000),
-          child: SingleChildScrollView(
-            child: Wrap(
-              alignment: WrapAlignment.center,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              direction: SizeConfig.orientation == Orientation.landscape
-                  ? Axis.horizontal
-                  : Axis.vertical,
-              children: [
-                SizeConfig.orientation == Orientation.landscape
-                    ? const SizedBox(
-                        height: 6,
-                      )
-                    : const SizedBox(
-                        height: 120,
-                      ),
-                SvgPicture.asset(
-                  'images/task.svg',
-                  height: 90,
-                  semanticsLabel: 'Task',
-                  color: primaryClr.withOpacity(0.5),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                    "You don't have any tasks yet \nCreate new task..",
-                    style: subHeadingStyle,
-                    textAlign: TextAlign.center,
+          child: RefreshIndicator(
+            onRefresh: _onRefresh,
+            child: SingleChildScrollView(
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                direction: SizeConfig.orientation == Orientation.landscape
+                    ? Axis.horizontal
+                    : Axis.vertical,
+                children: [
+                  SizeConfig.orientation == Orientation.landscape
+                      ? const SizedBox(
+                          height: 6,
+                        )
+                      : const SizedBox(
+                          height: 120,
+                        ),
+                  SvgPicture.asset(
+                    'images/task.svg',
+                    height: 90,
+                    semanticsLabel: 'Task',
+                    color: primaryClr.withOpacity(0.5),
                   ),
-                )
-              ],
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      "You don't have any tasks yet \nCreate new task..",
+                      style: subHeadingStyle,
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                ],
+              ),
             ),
           ),
         )
@@ -282,5 +298,9 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     ));
+  }
+
+  Future<void> _onRefresh() async {
+    _taskController.getTask();
   }
 }

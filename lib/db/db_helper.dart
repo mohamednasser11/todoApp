@@ -49,7 +49,7 @@ class DBHelper {
 ''', [1, id]);
   }
 
-  static Future<List<Map<String, dynamic>>> query(int id) async {
+  static Future<List<Map<String, dynamic>>> query() async {
     print(';query');
     return await _db!.query(_tablename);
   }

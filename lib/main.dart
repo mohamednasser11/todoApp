@@ -9,8 +9,7 @@ import 'db/db_helper.dart';
 
 void main() async {
   runApp(const MyApp());
-  WidgetsFlutterBinding.ensureInitialized();
-  NotifyHelper().initializationNotification();
+  WidgetsFlutterBinding.ensureInitialized;
   NotifyHelper().requestingPermission();
   await DBHelper.initDb();
   await GetStorage.init();
