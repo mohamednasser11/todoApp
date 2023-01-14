@@ -1,9 +1,11 @@
 import 'package:date_picker_timeline/date_picker_timeline.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:todo2/controllers/task_controller.dart';
+import 'package:todo2/models/task.dart';
 import 'package:todo2/services/notification_services.dart';
 import 'package:todo2/services/theme_services.dart';
 import 'package:todo2/ui/pages/add_task_page.dart';
@@ -11,6 +13,7 @@ import 'package:todo2/ui/size_config.dart';
 import 'package:todo2/ui/theme.dart';
 import 'package:todo2/ui/widgets/button.dart';
 import 'package:todo2/ui/widgets/input_field.dart';
+import 'package:todo2/ui/widgets/task_tile.dart';
 import '';
 
 class HomePage extends StatefulWidget {
@@ -117,16 +120,30 @@ class _HomePageState extends State<HomePage> {
   }
 
   _showTasks() {
-    return Expanded(child: _noTaskMSg()
-        // child: Obx(() {
-        //   if (_taskController.taskList.isEmpty) {
-        //   } else {
-        //     return Container(
-        //       height: 0,
-        //     );
-        //   }
-        // }),
-        );
+    return Expanded(
+      child: ListView.builder(
+        scrollDirection: SizeConfig.orientation == Orientation.landscape
+            ? Axis.horizontal
+            : Axis.vertical,
+        itemBuilder: ((context, index) {
+          var task = _taskController.taskList[index];
+          return AnimationConfiguration.staggeredList(
+            duration: const Duration(milliseconds: 1325),
+            position: index,
+            child: SlideAnimation(
+              horizontalOffset: 300,
+              child: FadeInAnimation(
+                child: GestureDetector(
+                  onTap: () => _showBottomSheet(context, task),
+                  child: TaskTile(task: task),
+                ),
+              ),
+            ),
+          );
+        }),
+        itemCount: _taskController.taskList.length,
+      ),
+    );
   }
 
   _noTaskMSg() {
@@ -169,5 +186,101 @@ class _HomePageState extends State<HomePage> {
         )
       ],
     );
+  }
+
+  _buildBottomSheet(
+      {required String label,
+      required Function() onTap,
+      required Color clr,
+      bool isClose = false}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(
+          vertical: 4,
+        ),
+        height: 65,
+        width: SizeConfig.screenWidth * 0.9,
+        decoration: BoxDecoration(
+          border: Border.all(
+            width: 2,
+            color: isClose
+                ? Get.isDarkMode
+                    ? Colors.grey[600]!
+                    : Colors.grey[300]!
+                : clr,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          color: isClose ? Colors.transparent : clr,
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style:
+                isClose ? titleStyle : titleStyle.copyWith(color: Colors.white),
+          ),
+        ),
+      ),
+    );
+  }
+
+  _showBottomSheet(BuildContext context, Task task) {
+    Get.bottomSheet(SingleChildScrollView(
+      child: Container(
+        padding: const EdgeInsets.only(top: 4),
+        width: SizeConfig.screenWidth,
+        height: (SizeConfig.orientation == Orientation.landscape)
+            ? (task.isCompleted == 1
+                ? SizeConfig.screenHeight * 0.6
+                : SizeConfig.screenHeight * 0.8)
+            : (task.isCompleted == 1
+                ? SizeConfig.screenHeight * 0.30
+                : SizeConfig.screenHeight * 0.39),
+        color: Get.isDarkMode ? darkHeaderClr : Colors.white,
+        child: Column(
+          children: [
+            Flexible(
+              child: Container(
+                height: 6,
+                width: 120,
+                decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color:
+                        Get.isDarkMode ? Colors.grey[600] : Colors.grey[300]),
+              ),
+            ),
+            const SizedBox(
+              height: 10,
+            ),
+            task.isCompleted == 1
+                ? Container()
+                : _buildBottomSheet(
+                    label: 'Task Completed',
+                    onTap: () {
+                      Get.back();
+                    },
+                    clr: primaryClr),
+            _buildBottomSheet(
+                label: 'Delete Task ',
+                onTap: () {
+                  Get.back();
+                },
+                clr: primaryClr),
+            Divider(
+              color: Get.isDarkMode ? Colors.grey : darkGreyClr,
+            ),
+            _buildBottomSheet(
+                label: 'Cancel',
+                onTap: () {
+                  Get.back();
+                },
+                clr: primaryClr),
+            const SizedBox(
+              height: 10,
+            ),
+          ],
+        ),
+      ),
+    ));
   }
 }
